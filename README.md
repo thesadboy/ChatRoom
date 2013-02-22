@@ -5,7 +5,7 @@ ChatRoom with Node and socket.io
 ## 简介
 通过node.js和socket.io实现的一个简单的聊天室，可以实现上下线广播，广播聊天和点对点聊天。
 
-##安装
+##安装运行
     npm install
     node app
 ##使用
