@@ -8,7 +8,7 @@ $(document).ready(function(e) {
 			}
 		}
   });
-	var from = $.cookie('user').split(",")[0];
+	var from = $.cookie('user');
 	var to = 'all';
 	$("#input_content").html("");
 	var server = "http://localhost:3000";
@@ -37,6 +37,7 @@ $(document).ready(function(e) {
 		var data = JSON.parse(data);
 		var msg = '<div style="color:#f00">SYSTEM:'+data.msg+'</div>';
 		addMsg(msg);
+		play_ring("/ring/online.wav");
 	});
 	socket.on('userflush',function(data){
 		var data = JSON.parse(data);
@@ -55,6 +56,7 @@ $(document).ready(function(e) {
 		} else if(data.to == from)
 		{
 			addMsg('<div>'+data.from+'('+time+')对我说：<br/>'+data.msg+'</div>');
+			play_ring("/ring/msg.wav");
 		}
 	});
 
@@ -120,5 +122,9 @@ $(document).ready(function(e) {
 				$(users[i]).removeClass('sayingto');
 			}
 		}
+	}
+	function play_ring(url){
+		var embed = '<embed id="ring" src="'+url+'" loop="0" autostart="true" hidden="true" style="height:0px; width:0px;"></embed>';
+		$("#ring").html(embed);
 	}
 });

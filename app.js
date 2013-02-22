@@ -125,6 +125,7 @@ app.configure(function(){
   app.use(express.favicon());
   app.use(express.logger('dev'));
   app.use(express.bodyParser());
+  app.use(express.cookieParser());
   app.use(express.methodOverride());
   app.use(app.router);
   app.use(express.static(path.join(__dirname, 'public')));
@@ -140,7 +141,7 @@ app.get('/', function (req, res, next) {
     res.redirect('/signin');
     return;
   }
-  var cookies = req.headers.cookie.split(",");
+  var cookies = req.headers.cookie.split(";");
   var isSign = false;
   for(var i = 0 ; i < cookies.length; i ++)
   {
@@ -165,7 +166,8 @@ app.get('/signup',function(req,res,next){
   res.sendfile('views/signup.html');
 });
 app.post('/signin',function(req,res,next){
-  res.setHeader("Set-Cookie","user="+req.body.username);
+  res.cookie("user",req.body.username[0]);
+  res.cookie("aaaa","bbb");
   res.redirect('/');
 });
 server.listen(app.get('port'), function(){
