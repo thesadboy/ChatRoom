@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Sign In</title>
+<link type="text/css" rel="stylesheet" href="stylesheets/sign.css">
+<link type="text/css" rel="stylesheet" href="stylesheets/common.css">
+</head>
+
+<body>
+	<div id="content">
+      <form style="margin-top:70px;" action="/signin" method="post">
+        <div class="form_line">
+          <div class="form_label">登录名：</div>
+          <input type="text" name="username"/>
+        </div>
+        <div class="form_line">
+          <div class="form_label">密码：</div>
+          <input type="password" name="username"/>
+        </div>
+        <div class="form_line">
+          <div class="form_label"></div>
+          <button class="button gray" type="submit">登录</button>
+          <button class="button gray" type="reset">取消</button>
+        </div>
+        <div class="form_line">
+          <div class="form_label"></div>
+          还没有账号？
+          <a href="/signup">注册</a>
+        </div>
+      </form>
+  </div>
+</body>
+</html>
