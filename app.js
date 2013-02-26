@@ -14,52 +14,33 @@ var server = http.createServer(app);
 var io = require('socket.io').listen(server,{log:false});
 var clients = [];
 var users = [];
+var oldSocket = "";
+var getDiffTime = function()
+{
+  if(disconnect)
+  {
+    return connect - disconnect;
+  }
+  return false;
+}
 io.sockets.on('connection',function(socket){
-  socket.on('online',function(user){
-    //有人上线
-    var isOnline = true;
-    for(var i = 0; i < clients.length; i ++)
+  socket.on('online',function(data){
+    var data = JSON.parse(data);
+    //检查是否是已经登录绑定
+    if(!clients[data.user])
     {
-      if(clients[i][0] == user)
+      //新上线用户，需要发送用户上线提醒,需要向客户端发送新的用户列表
+      users.unshift(data.user);
+      for(var index in clients)
       {
-        clients.splice(i,1,[user,socket]);
-        isOnline = false;
+        clients[index].emit('system',JSON.stringify({type:'online',msg:data.user,time:(new Date()).getTime()}));
+        clients[index].emit('userflush',JSON.stringify({users:users}));
       }
+      socket.emit('system',JSON.stringify({type:'in',msg:'',time:(new Date()).getTime()}));
+      socket.emit('userflush',JSON.stringify({users:users}));
     }
-    if(isOnline)
-    {
-      for(var i = 0; i < clients.length; i ++)
-      {
-        clients[i][1].emit('system',JSON.stringify({msg:'用户 '+user+' 上线了！'}));
-      }
-      socket.emit('system',JSON.stringify({msg:'您已经进入聊天室了！'}));
-      clients.push([user,socket]);
-      users.unshift(user);
-    }
-    //刷新返回在线人员列表
-    for(var i = 0; i < clients.length; i ++)
-    {
-      clients[i][1].emit('userflush',JSON.stringify({users:users}));
-    }
-  });
-  socket.on('reonline',function(user){
-    //有人上线
-    var isOnline = true;
-    for(var i = 0; i < clients.length; i ++)
-    {
-      if(clients[i][0] == user)
-      {
-        clients.splice(i,1,[user,socket]);
-        isOnline = false;
-      }
-    }
-    clients.push([user,socket]);
-    users.unshift(user);
-    //刷新返回在线人员列表
-    for(var i = 0; i < clients.length; i ++)
-    {
-      clients[i][1].emit('userflush',JSON.stringify({users:users}));
-    }
+      clients[data.user] = socket;
+      socket.emit('userflush',JSON.stringify({users:users}));
   });
   socket.on('say',function(data){
     //dataformat:{to:'all',from:'Nick',msg:'msg'}
@@ -71,49 +52,40 @@ io.sockets.on('connection',function(socket){
     if(data.to == "all")
     {
       //对所有人说
-      for(var i = 0; i < clients.length; i ++)
+      for(var index in clients)
       {
-        clients[i][1].emit('say',msgData);
+        clients[index].emit('say',msgData);
       }
     }
     else
     {
       //对某人说
-      for(var i = 0; i < clients.length; i ++)
-      {
-        if(clients[i][0] == data.to || clients[i][0] == data.from)
-        {
-          clients[i][1].emit('say',msgData);
-        }
-      }
+      clients[data.to].emit('say',msgData);
+      clients[data.from].emit('say',msgData);
     }
   });
   socket.on('offline',function(user){
-    //有人下线
+    socket.disconnect();
   });
   socket.on('disconnect',function(){
     //有人下线
-    var user = '';
-    for(var i = 0; i < clients.length; i ++)
+    setTimeout(userOffline,5000);
+    function userOffline()
     {
-      if(clients[i][1] == socket)
+      for(var index in clients)
       {
-        user = clients[i][0];
-        users.splice(users.indexOf(clients[i][0]),1);
-        clients.splice(i,1);
+        if(clients[index] == socket)
+        {
+          users.splice(users.indexOf(index),1);
+          delete clients[index];
+          for(var index_inline in clients)
+          {
+            clients[index_inline].emit('system',JSON.stringify({type:'offline',msg:index,time:(new Date()).getTime()}));
+            clients[index_inline].emit('userflush',JSON.stringify({users:users}));
+          }
+          break;
+        }
       }
-    }
-    if(user != '')
-    {
-      for(var i = 0; i < clients.length; i ++)
-      {
-        clients[i][1].emit('system',JSON.stringify({msg:'用户 '+user+' 下线了！'}));
-      }
-    }
-    //刷新返回在线人员列表
-    for(var i = 0; i < clients.length; i ++)
-    {
-      clients[i][1].emit('userflush',JSON.stringify({users:users}));
     }
   });
 });
@@ -141,7 +113,7 @@ app.get('/', function (req, res, next) {
     res.redirect('/signin');
     return;
   }
-  var cookies = req.headers.cookie.split(";");
+  var cookies = req.headers.cookie.split("; ");
   var isSign = false;
   for(var i = 0 ; i < cookies.length; i ++)
   {
@@ -167,7 +139,6 @@ app.get('/signup',function(req,res,next){
 });
 app.post('/signin',function(req,res,next){
   res.cookie("user",req.body.username[0]);
-  res.cookie("aaaa","bbb");
   res.redirect('/');
 });
 server.listen(app.get('port'), function(){

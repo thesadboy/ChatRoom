@@ -11,31 +11,44 @@ $(document).ready(function(e) {
 	var from = $.cookie('user');
 	var to = 'all';
 	$("#input_content").html("");
-	var server = "http://localhost:3000";
-	//var server = "http://node-chatroom.ap01.aws.af.cm/";
 	if (/Firefox\/\s/.test(navigator.userAgent)){
-	    var socket = io.connect(server,{transports:['xhr-polling']}); 
+	    var socket = io.connect({transports:['xhr-polling']}); 
 	} 
 	else if (/MSIE (\d+.\d+);/.test(navigator.userAgent)){
-	    var socket = io.connect(server,{transports:['jsonp-polling']}); 
+	    var socket = io.connect({transports:['jsonp-polling']}); 
 	} 
 	else { 
-	    var socket = io.connect(server); 
+	    var socket = io.connect(); 
 	}
-	socket.emit('online',from);
+	socket.emit('online',JSON.stringify({user:from}));
 	socket.on('disconnect',function(){
 		var msg = '<div style="color:#f00">SYSTEM:连接服务器失败</div>';
 		addMsg(msg);
 		$("#list").empty();
 	});
 	socket.on('reconnect',function(){
-		socket.emit('reonline',from);
+		socket.emit('online',JSON.stringify({user:from}));
 		var msg = '<div style="color:#f00">SYSTEM:重新连接服务器</div>';
 		addMsg(msg);
 	});
 	socket.on('system',function(data){
 		var data = JSON.parse(data);
-		var msg = '<div style="color:#f00">SYSTEM:'+data.msg+'</div>';
+		var time = getTimeShow(data.time);
+		var msg = '';
+		if(data.type =='online')
+		{
+			msg += '用户 ' + data.msg +' 上线了！';
+		} else if(data.type =='offline')
+		{
+			msg += '用户 ' + data.msg +' 下线了！';
+		} else if(data.type == 'in')
+		{
+			msg += '你进入了聊天室！';
+		} else
+		{
+			msg += '未知系统消息！';
+		}
+		var msg = '<div style="color:#f00">SYSTEM('+time+'):'+msg+'</div>';
 		addMsg(msg);
 		play_ring("/ring/online.wav");
 	});
@@ -46,8 +59,7 @@ $(document).ready(function(e) {
 	});
 	socket.on('say',function(msgData){
 		var time = msgData.time;
-		var dt = new Date(time);
-		var time = dt.getFullYear() + '-' + (dt.getMonth()+1) + '-' + dt.getDate() + ' '+dt.getHours() + ':' + (dt.getMinutes()<10?('0'+ dt.getMinutes()):dt.getMinutes()) + ":" + (dt.getSeconds()<10 ? ('0' + dt.getSeconds()) : dt.getSeconds());
+		time = getTimeShow(time);
 		var data = msgData.data;
 		if (data.to=='all') {
 			addMsg('<div>'+data.from+'('+time+')说：<br/>'+data.msg+'</div>');
@@ -124,7 +136,14 @@ $(document).ready(function(e) {
 		}
 	}
 	function play_ring(url){
-		var embed = '<embed id="ring" src="'+url+'" loop="0" autostart="true" hidden="true" style="height:0px; width:0px;"></embed>';
+		var embed = '<embed id="ring" src="'+url+'" loop="0" autostart="true" hidden="true" style="height:0px; width:0px;0px;"></embed>';
 		$("#ring").html(embed);
 	}
+	function getTimeShow(time)
+	{
+		var dt = new Date(time);
+		time = dt.getFullYear() + '-' + (dt.getMonth()+1) + '-' + dt.getDate() + ' '+dt.getHours() + ':' + (dt.getMinutes()<10?('0'+ dt.getMinutes()):dt.getMinutes()) + ":" + (dt.getSeconds()<10 ? ('0' + dt.getSeconds()) : dt.getSeconds());
+		return time;
+	}
+	$.cookie('isLogin',true);
 });
