@@ -11,7 +11,7 @@ var express = require('express')
 
 var app = express();
 var server = http.createServer(app);
-var io = require('socket.io').listen(server,{log:false});
+var io = require('socket.io')(server);
 var clients = [];
 var users = [];
 var oldSocket = "";
